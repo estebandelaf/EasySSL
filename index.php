@@ -127,6 +127,19 @@ function download ($uri, $name = '') {
 	print $file['data'];
 }
 
+// funcion (alpha) para limpiar parametros recibidos antes de pasarlos a la terminal
+// TODO: usar expresion regular para quitar caracteres extraños
+function clean ($txt) {
+	$txt = str_replace('"', '', $txt);
+	$txt = str_replace('\\', '', $txt);
+	$txt = str_replace('#', '', $txt);
+	$txt = str_replace(';', '', $txt);
+	$txt = str_replace('&', '', $txt);
+	$txt = str_replace('|', '', $txt);
+	$txt = str_replace('>', '', $txt);
+	return $txt;
+}
+
 // descargar certificado de la CA
 if(isset($_GET['CA_crt'])) {
 	download(DIR.'/CA/ca.crt', CA_NAME.'.crt');
@@ -142,8 +155,7 @@ else if(isset($_POST['generate'])) {
 		exit;
 	}
 	// Generar certificado
-	$cmd = DIR.'/easyssl "'.$_POST['REQUEST_NAME'].'" "'.$_POST['REQUEST_C'].'" "'.$_POST['REQUEST_ST'].'" "'.$_POST['REQUEST_L'].'" "'.$_POST['REQUEST_OU'].'" "'.$_POST['REQUEST_CN'].'" "'.$_POST['REQUEST_emailAddress'].'" "'.$_POST['REQUEST_PASSWORD1'].'"';
-	//echo $cmd; exit;
+	$cmd = DIR.'/easyssl "'.clean($_POST['REQUEST_NAME']).'" "'.clean($_POST['REQUEST_C']).'" "'.clean($_POST['REQUEST_ST']).'" "'.clean($_POST['REQUEST_L']).'" "'.clean($_POST['REQUEST_OU']).'" "'.clean($_POST['REQUEST_CN']).'" "'.clean($_POST['REQUEST_emailAddress']).'" "'.clean($_POST['REQUEST_PASSWORD1']).'"';
 	system($cmd);
 	// Verificar que el certificado haya sido generado
 	if(!file_exists(DIR.'/CA/newcerts/'.$_POST['REQUEST_CN'].'-ssl.tar.gz.gpg')) {
