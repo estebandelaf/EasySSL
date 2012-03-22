@@ -1,0 +1,58 @@
+body {
+	font-family: "Nimbus Sans L", Helvetica;
+	background: #ddd;
+}
+
+#container {
+	width: 700px;
+	margin: 0 auto;
+	border: 1px solid #bbb;
+	padding: 20px;
+	background: white;
+}
+
+label {
+	float: left;
+	width: 200px;
+	text-align: right;
+	margin-right: 20px;
+	font-weight: bold;
+}
+
+input {
+	display: block;
+	margin-bottom: 10px;
+}
+
+input[type="text"], input[type="password"] {
+	border: 1px solid #bbb;
+	padding: 0.5em;
+	width: 250px;
+}
+
+input[type="submit"] {
+	width: 265px;
+}
+
+#footer {
+	font-size: 0.75em;
+	text-align: center;
+	margin-top: 20px;
+}
+
+.error, .ok {
+	margin: 0 auto;
+	padding: 1em;
+	text-align: center;
+	font-weight: bold;
+	border: 1px solid black;
+}
+
+.error {
+	background: #ff7575;
+}
+
+.ok {
+	background: #7ec86d;
+}
+

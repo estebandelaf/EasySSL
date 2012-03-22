@@ -1,0 +1,187 @@
+#!/bin/bash
+#
+# Easy SSL
+# Copyright (C) 2011 Esteban De La Fuente Rubio (esteban[at]delaf.cl)
+#
+# Este programa es software libre: usted puede redistribuirlo y/o modificarlo
+# bajo los términos de la Licencia Pública General GNU publicada
+# por la Fundación para el Software Libre, ya sea la versión 3
+# de la Licencia, o (a su elección) cualquier versión posterior de la misma.
+#
+# Este programa se distribuye con la esperanza de que sea útil, pero
+# SIN GARANTÍA ALGUNA; ni siquiera la garantía implícita
+# MERCANTIL o de APTITUD PARA UN PROPÓSITO DETERMINADO.
+# Consulte los detalles de la Licencia Pública General GNU para obtener
+# una información más detallada.
+#
+# Debería haber recibido una copia de la Licencia Pública General GNU
+# junto a este programa.
+# En caso contrario, consulte <http://www.gnu.org/licenses/gpl.html>.
+#
+# Este archivo corresponde al backend de la interfaz web
+#
+# Visite http://dev.sasco.cl/easyssl para más detalles.
+#
+
+# Nombre de la autoridad certificadora (CA)
+CA_NAME="SASCO"
+# Configuraciones para la CA
+CA_C="CL" # country
+CA_ST="Metropolitana" # state or provicne
+CA_L="Santiago" # location
+CA_O=$CA_NAME # organization
+CA_OU="Informatica" # organizational unit
+CA_CN=$CA_NAME # common name
+CA_emailAddress="sasco@sasco.cl"
+# Directorio que contiene el script y certificados de la CA
+# Visto desde el directorio padre, desde donde se encuentra
+# el archivo index.php
+DIR="./easyssl/CA"
+# Tamaño de la clave
+KEY_SIZE=4096
+# Tiempo para expiración de la firma de los certificados
+CRT_DAYS=3650
+
+# Definir path (requerido al usar suPHP)
+PATH=$HOME/bin:/usr/local/bin:/usr/bin:/bin
+
+# Mostrar ayuda
+if [ "$1" = "--help" ]; then
+	echo ""
+	echo "EasySSL por defecto se ejecuta en modo no interactivo,"
+	echo "este modo espera 8 parámetros, ver ejemplo."
+	echo ""
+	echo "Opciones:"
+	echo "--init            Inicializa la CA"
+	echo "--example         Muestra el ejemplo no interactivo"
+	echo "--interactive     Ejecuta EasySSL en modo interactivo"
+	echo "--help            Muestra esta ayuda"
+	echo ""
+	echo "La ejecución de este script no valida si los campos"
+	echo "fueron o no ingresados, como tampoco si son válidos."
+	echo "La interfaz web si hace estas validaciones."
+	echo ""
+	exit
+fi
+
+# Iniciarlizar la CA
+if [ "$1" = "--init"  ]; then
+	# Ubicación de los archivos de la CA
+	CA_KEY="$DIR/private/ca.key"
+	CA_CSR="$DIR/private/ca.csr"
+	CA_CRT="$DIR/ca.crt"
+	# Verificar que no existan ya la CA creada
+	if [ -f $CA_KEY -o -f $CA_CSR -o -f $CA_CRT ]; then
+		echo "Antes de crear una nueva CA debe eliminar los archivos:"
+		echo " $CA_KEY"
+		echo " $CA_CSR"
+		echo " $CA_CRT"
+		echo "Puede borrar directamente el directorio CA"
+		exit
+	fi
+	# Crear directorios y archivos relacionados
+	mkdir -p "$DIR/certs"
+	mkdir -p "$DIR/crl"
+	mkdir -p "$DIR/private"
+	echo `date +%N` > "$DIR/private/.rand"
+	mkdir -p "$DIR/newcerts"
+	touch "$DIR/index.txt"
+	echo 1000 > "$DIR/serial"
+	# Crear la CA
+	SUBJECT="/C=$CA_C/ST=$CA_ST/L=$CA_L/O=$CA_O/OU=$CA_OU/CN=$CA_CN/emailAddress=$CA_emailAddress"
+	openssl genrsa -out $CA_KEY $KEY_SIZE
+	openssl req -new -key $CA_KEY -out $CA_CSR -subj "$SUBJECT"
+	openssl x509 -req -days $CRT_DAYS -in $CA_CSR -signkey $CA_KEY -out $CA_CRT
+	# Quitar permisos al grupo y otros
+	chmod go-rwx $DIR -R
+	# terminar la ejecucion
+	exit
+fi
+
+# Ejemplo de uso del script
+if [ "$1" = "--example"  ]; then 
+	echo "./easyssl/easyssl \"Example S.A.\" \"CL\" \"Metropolitana\" \"Santiago\" \"Informatica\" \"example.com\" \"webmaster@example.com\" \"clave123\""
+	exit
+fi
+
+# Preguntar al usuario por los datos (modo interactivo)
+if [ "$1" = "--interactive" ]; then
+	# Nombre
+	echo -n "Nombre []: "
+	read REQUEST_NAME
+	# País
+	echo -n "País [$CA_C]: "
+	read REQUEST_C
+	[ -z "$REQUEST_C" ] && REQUEST_C=$CA_C
+	# Provincia/estado
+	echo -n "Región o provincia [$CA_ST]: "
+	read REQUEST_ST
+	[ -z "$REQUEST_ST" ] && REQUEST_ST=$CA_ST
+	# Ubicacion
+	echo -n "Ciudad [$CA_L]: "
+	read REQUEST_L
+	[ -z "$REQUEST_L" ] && REQUEST_L=$CA_L
+	# Unidad organizacional
+	echo -n "Unidad organizacional [$CA_OU]: "
+	read REQUEST_OU
+	[ -z "$REQUEST_OU" ] && REQUEST_OU=$CA_OU
+	# Nombre comun (dominio)
+	echo -n "Dominio []: "
+	read REQUEST_CN
+	# Correo
+	echo -n "Correo []: "
+	read REQUEST_emailAddress
+	# Contraseña
+	echo -n "Contraseña []: "
+	stty -echo
+	read REQUEST_PASSWORD
+	stty echo
+	echo ""
+# Parsear datos recibidos desde la terminal (modo no interactivo, este por defecto)
+else
+	# Verificar cantidad de argumentos y mostrar ayuda en caso que no existan los argumentos necesarios
+	if [ $# -ne 8 ]; then
+		echo "Se deben pasar 8 argumentos, ver ejemplo: ./easyssl/easyssl --example"
+		./easyssl/easyssl --example
+		exit
+	fi
+	# recuperar datos
+	REQUEST_NAME="$1"
+	REQUEST_C="$2" # country
+	REQUEST_ST="$3" # state or provicne
+	REQUEST_L="$4" # location
+	REQUEST_OU="$5" # organizational unit
+	REQUEST_CN=$6 # common name
+	REQUEST_emailAddress="$7"
+	REQUEST_PASSWORD="$8"
+fi
+REQUEST_O=$REQUEST_NAME # organization
+
+# Si el certificado ya existe no se hace nada
+if [ -f "$DIR/newcerts/$REQUEST_CN-ssl.tar.gz" ]; then
+	echo "Certificado SSL ya existe y se encuentra firmado,"
+	echo "disponible en $DIR/newcerts/$REQUEST_CN-ssl.tar.gz"
+	exit
+fi
+
+# Crear llave, solicitud de firma y certificado firmado
+mkdir -p "$DIR/newcerts/$REQUEST_CN-ssl"
+REQUEST_KEY="$DIR/newcerts/$REQUEST_CN-ssl/$REQUEST_CN.key"
+REQUEST_CSR="$DIR/newcerts/$REQUEST_CN-ssl/$REQUEST_CN.csr"
+REQUEST_CRT="$DIR/newcerts/$REQUEST_CN-ssl/$REQUEST_CN.crt"
+
+# Crear llave y certificados
+SUBJECT="/C=$REQUEST_C/ST=$REQUEST_ST/L=$REQUEST_L/O=$REQUEST_O/OU=$REQUEST_OU/CN=$REQUEST_CN/emailAddress=$REQUEST_emailAddress"
+openssl genrsa -out $REQUEST_KEY $KEY_SIZE
+openssl req -new -key $REQUEST_KEY -out $REQUEST_CSR -subj "$SUBJECT"
+openssl ca -in $REQUEST_CSR -out $REQUEST_CRT -config "$DIR/../openssl.conf" < easyssl/yes
+
+# Empaquetar key, csr y crt
+cd "$DIR/newcerts"
+tar czf "$REQUEST_CN-ssl.tar.gz" "$REQUEST_CN-ssl"
+
+# Encriptar archivo comprimido con la clave entregada por el usuario
+gpg --batch --passphrase $REQUEST_PASSWORD -c "$REQUEST_CN-ssl.tar.gz"
+
+exit
+
