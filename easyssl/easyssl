@@ -24,7 +24,7 @@
 #
 
 # Nombre de la autoridad certificadora (CA)
-CA_NAME="SASCO"
+CA_NAME="SASCO SpA"
 # Configuraciones para la CA
 CA_C="CL" # country
 CA_ST="Metropolitana" # state or provicne
@@ -53,6 +53,7 @@ if [ "$1" = "--help" ]; then
 	echo ""
 	echo "Opciones:"
 	echo "--init            Inicializa la CA"
+	echo "--destroy         Destruye la CA"
 	echo "--example         Muestra el ejemplo no interactivo"
 	echo "--interactive     Ejecuta EasySSL en modo interactivo"
 	echo "--help            Muestra esta ayuda"
@@ -70,13 +71,16 @@ if [ "$1" = "--init"  ]; then
 	CA_KEY="$DIR/private/ca.key"
 	CA_CSR="$DIR/private/ca.csr"
 	CA_CRT="$DIR/ca.crt"
+	CA_DER="$DIR/ca_der.crt"
 	# Verificar que no existan ya la CA creada
-	if [ -f $CA_KEY -o -f $CA_CSR -o -f $CA_CRT ]; then
+	if [ -f $CA_KEY -o -f $CA_CSR -o -f $CA_CRT -o -f $CA_DER ]; then
 		echo "Antes de crear una nueva CA debe eliminar los archivos:"
 		echo " $CA_KEY"
 		echo " $CA_CSR"
 		echo " $CA_CRT"
-		echo "Puede borrar directamente el directorio CA"
+		echo " $CA_DER"
+		echo "Puede destruir la CA por completo usando"
+		echo " $0 --destroy"
 		exit
 	fi
 	# Crear directorios y archivos relacionados
@@ -92,14 +96,21 @@ if [ "$1" = "--init"  ]; then
 	openssl genrsa -out $CA_KEY $KEY_SIZE
 	openssl req -new -key $CA_KEY -out $CA_CSR -subj "$SUBJECT"
 	openssl x509 -req -days $CRT_DAYS -in $CA_CSR -signkey $CA_KEY -out $CA_CRT
+	openssl x509 -in $CA_CRT -inform PEM -out $CA_DER -outform DER
 	# Quitar permisos al grupo y otros
 	chmod go-rwx $DIR -R
 	# terminar la ejecucion
 	exit
 fi
 
+# Destruir la CA
+if [ "$1" = "--destroy"  ]; then
+	rm -rf $DIR
+	exit
+fi
+
 # Ejemplo de uso del script
-if [ "$1" = "--example"  ]; then 
+if [ "$1" = "--example"  ]; then
 	echo "./easyssl/easyssl \"Example S.A.\" \"CL\" \"Metropolitana\" \"Santiago\" \"Informatica\" \"example.com\" \"webmaster@example.com\" \"clave123\""
 	exit
 fi
