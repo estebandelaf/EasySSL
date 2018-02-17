@@ -6,6 +6,8 @@ firmados por una CA (Certification Authority) vía web. Utiliza un formato de
 directorios y configuración idéntico al usado por OpenSSL y es configurable para
 ser utilizado por cualquier usuario y en cualquier ruta del sistema.
 
+**Recomendación**: usar [Let's Encrypt](https://letsencrypt.org) para la administración de certificados SSL.
+
 Características
 ---------------
 
